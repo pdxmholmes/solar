@@ -1,13 +1,13 @@
 import * as express from 'express';
-
-const webpack = require('webpack');
-const webpackDevMiddleware = require('webpack-dev-middleware');
-const webpackHotMiddleware = require('webpack-hot-middleware');
-const { spawn } = require('child_process');
+import * as webpack from 'webpack';
+import * as webpackDevMiddleware from 'webpack-dev-middleware';
+import * as webpackHotMiddleware from 'webpack-hot-middleware';
+import * as minimist from 'minimist';
+import { spawn } from 'child_process';
 
 const config = require('./webpack.renderer');
 
-const argv = require('minimist')(process.argv.slice(2));
+const argv = minimist(process.argv.slice(2));
 
 const app = express();
 const compiler = webpack(config);
