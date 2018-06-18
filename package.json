@@ -1,0 +1,43 @@
+{
+  "name": "solar",
+  "version": "0.1.0",
+  "description": "",
+  "main": "dist/main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "npm run build:main && npm run build:renderer",
+    "build:main": "webpack --config webpack.main.ts --require ts-node/register",
+    "build:renderer": "webpack --config webpack.renderer.ts --require ts-node/register"
+  },
+  "author": "",
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "@types/node": "^10.3.1",
+    "@types/react": "^16.3.16",
+    "@types/react-dom": "^16.0.6",
+    "awesome-typescript-loader": "^5.0.0",
+    "bootstrap": "^4.1.1",
+    "bootswatch": "^4.1.1",
+    "css-loader": "^0.28.11",
+    "electron": "^2.0.2",
+    "electron-reload": "^1.2.2",
+    "html-webpack-plugin": "^3.2.0",
+    "jquery": "^3.3.1",
+    "mobx-react-devtools": "^5.0.1",
+    "node-sass": "^4.9.0",
+    "popper.js": "^1.14.3",
+    "sass-loader": "^7.0.3",
+    "style-loader": "^0.21.0",
+    "ts-node": "^6.1.0",
+    "typescript": "^2.9.1",
+    "webpack": "^4.11.1",
+    "webpack-command": "^0.2.1",
+    "webpack-dev-server": "^3.1.4"
+  },
+  "dependencies": {
+    "mobx": "^5.0.0",
+    "mobx-react": "^5.2.0",
+    "react": "^16.4.0",
+    "react-dom": "^16.4.0"
+  }
+}
