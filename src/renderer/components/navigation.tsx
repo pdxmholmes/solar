@@ -3,7 +3,7 @@ import { observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { NavigationService, NavigationTab } from '../services';
 
-import './navigation.scss';
+const styles = require('./navigation.scss');
 
 class NavigationProps {
   navigation: NavigationService;
@@ -13,13 +13,15 @@ class NavigationItemProps {
   tab: NavigationTab
 }
 
+console.log(Object.keys(styles));
+
 export class NavigationItem extends React.Component<NavigationItemProps, {}> {
   render() {
     const { tab } = this.props;
-    const classes = tab.active ? 'nav-link active' : 'nav-link';
+    const classes = tab.active ? `nav-link ${styles.active}` : 'nav-link';
     return (
       <li className="nav-item">
-        <a href="#" className={classes}>{tab.title}</a>
+        <a href="#" onClick={this.onNavigate} className={classes}>{tab.title}</a>
       </li>
     )
   }

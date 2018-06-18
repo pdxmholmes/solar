@@ -2,24 +2,25 @@ import * as path from 'path';
 import * as webpack from 'webpack';
 import * as HtmlWebpackPlugin from 'html-webpack-plugin';
 
+const port = 3000;
+
 module.exports = {
   devtool: 'inline-source-map',
   mode: 'development',
-  entry: ['./src/renderer/app'],
+  entry: [
+    'react-hot-loader/patch',
+    `webpack-hot-middleware/client?path=http://localhost:${port}/__webpack_hmr&reload=true`,
+    './src/renderer/app'
+  ],
   target: 'electron-renderer',
   output: {
     path: path.join(__dirname, 'dist'),
-    filename: 'renderer.js'
+    filename: 'renderer.js',
+    publicPath: `http://localhost:${port}/dist`
   },
   resolve: {
     extensions: ['.js', '.ts', '.tsx']
   },
-  plugins: [
-    new HtmlWebpackPlugin({
-      title: 'EVE Solar',
-      template: 'src/renderer/index.tpl.html'
-    })
-  ],
   module: {
     rules: [
       {
@@ -80,5 +81,21 @@ module.exports = {
         include: path.join(__dirname, 'src/renderer')
       }
     ]
-  }
+  },
+
+  plugins: [
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.NoEmitOnErrorsPlugin(),
+    new webpack.DefinePlugin({
+      'process.env.NODE_ENV': JSON.stringify('development')
+    }),
+    new webpack.LoaderOptionsPlugin({
+      debug: true
+    }),
+
+    new HtmlWebpackPlugin({
+      title: 'EVE Solar',
+      template: 'src/renderer/index.tpl.html'
+    })
+  ]
 };
