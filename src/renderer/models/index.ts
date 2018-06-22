@@ -1,2 +1,3 @@
-export * from './solar';
+export * from './root';
 export * from './character';
+export * from './configuration';

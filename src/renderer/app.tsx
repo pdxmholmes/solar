@@ -1,10 +1,11 @@
+import * as Bluebird from 'bluebird';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { observable } from 'mobx';
 import { observer } from 'mobx-react';
 import DevTools from 'mobx-react-devtools';
 
-import { SolarStore } from './models';
+import { rootStore, SolarStore, Configuration, Character } from './models';
 
 import { Navigation } from './components/navigation';
 
@@ -14,18 +15,24 @@ import 'jquery';
 import 'popper.js';
 
 import './app.global.scss';
-import { NavigationService } from './services';
+import { NavigationService, storageService } from './services';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 const navigationService = new NavigationService();
 
+// Bluebird/Promise magic
+declare global {
+  export interface Promise<T> extends Bluebird<T> {}
+}
+
 @observer
 class Solar extends React.Component<{ store: SolarStore }, {}> {
-  render() {
+  public render() {
+    const { configuration } = this.props.store;
     return (
       <div className="container-fluid">
         <div className="row">
-          <Navigation navigation={navigationService} />
+          <Navigation characters={rootStore.characters} />
         </div>
         {isDevelopment &&
           <DevTools />
@@ -35,8 +42,16 @@ class Solar extends React.Component<{ store: SolarStore }, {}> {
   }
 }
 
-const store = new SolarStore();
-ReactDOM.render(
-  <Solar store={store} />,
-  document.getElementById('root')
-);
+storageService.load<Configuration>('config')
+  .then(config => {
+    rootStore.configuration = config;
+    console.log(config);
+  })
+  .then(() => storageService.loadAll<Character>('character-*.json'))
+  .then(characters => rootStore.characters = characters || [])
+  .then(() => {
+    ReactDOM.render(
+      <Solar store={rootStore} />,
+      document.getElementById('root')
+    );
+  });

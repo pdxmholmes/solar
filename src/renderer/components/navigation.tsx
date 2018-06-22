@@ -1,54 +1,57 @@
 import * as React from 'react';
 import { observable } from 'mobx';
 import { observer } from 'mobx-react';
-import { NavigationService, NavigationTab } from '../services';
+import { esiService } from '../services';
+import { Character } from '../models';
 
 const styles = require('./navigation.scss');
 
-class NavigationProps {
-  navigation: NavigationService;
+interface NavigationProps {
+  characters: Character[];
 }
 
-class NavigationItemProps {
-  tab: NavigationTab
+interface NavigationItemProps {
+  character: Character;
 }
 
 console.log(Object.keys(styles));
 
 export class NavigationItem extends React.Component<NavigationItemProps, {}> {
-  render() {
-    const { tab } = this.props;
-    const classes = tab.active ? `nav-link ${styles.active}` : 'nav-link';
+  public render() {
+    const { character } = this.props;
     return (
-      <li className="nav-item">
-        <a href="#" onClick={this.onNavigate} className={classes}>{tab.title}</a>
+      <li className="nav-item" key={character.id}>
+        <a href="#" onClick={this.onNavigate} className="nav-link">{character.name}</a>
       </li>
-    )
+    );
   }
 
-  onNavigate = () => {
-    const { tab } = this.props;
-    alert(`${tab.title} = ${tab.route}`);
+  private onNavigate = () => {
+    return;
   }
 }
 
 @observer
 export class Navigation extends React.Component<NavigationProps, {}> {
-  render() {
-    const { navigation } = this.props;
+  public render() {
+    const { characters } = this.props;
     return (
       <nav className="col-md-2 d-none d-md-block bg-light sidebar">
         <div className="sidebar-sticky">
           <h6 className="sidebar-heading text-muted">
-            <span>Characters</span>
+            <span><a href="#" onClick={this.onNewCharacter}>Characters</a></span>
           </h6>
           <ul className="nav flex-column">
-            {navigation.tabs.map(tab =>
-              <NavigationItem tab={tab} />
+            {characters.map(character =>
+              <NavigationItem character={character} />
             )}
           </ul>
         </div>
       </nav>
-    )
+    );
+  }
+
+  private onNewCharacter = () => {
+    esiService.authenticateNewCharacter();
   }
 }

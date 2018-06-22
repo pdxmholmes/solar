@@ -1,16 +1,49 @@
-import * as path from 'path';
-import { app, BrowserWindow } from 'electron';
-//import * as reload from 'electron-reload';
+import * as http from 'http';
+import * as url from 'url';
+import { app, BrowserWindow, protocol } from 'electron';
+import { Server } from 'net';
 
-//reload(path.join(__dirname, 'dist'));
+const isDevelopment = process.env.NODE_ENV !== 'production';
 
 let mainWindow: BrowserWindow = null;
+let server: Server = null;
+const devPort = 9999;
+
+function setupSsoHandler() {
+  if (isDevelopment) {
+    server = http.createServer((request, response) => {
+      const queryParameters = url.parse(request.url, true).query;
+
+      mainWindow.webContents.send('sso:received-auth-code', queryParameters);
+
+      response.statusCode = 200;
+      response.end();
+    });
+
+    server.listen(devPort, 'localhost', err => {
+      if (err) {
+        throw err;
+      }
+
+      console.log(`Dev SSO server listening on ${devPort}`);
+    });
+  } else {
+    protocol.registerHttpProtocol('eveauth-solar', request => {
+      console.log(request);
+    });
+  }
+}
+
 app.on('ready', () => {
   mainWindow = new BrowserWindow({
     show: false,
     width: 1024,
     height: 768
   });
+
+  (global as any).userStoragePath = app.getPath('userData');
+
+  setupSsoHandler();
 
   mainWindow.loadURL(`file://${__dirname}/index.html`);
   mainWindow.webContents.on('did-finish-load', () => {

@@ -1,9 +1,14 @@
 import { observable } from 'mobx';
 
 export class NavigationTab {
-  @observable active: boolean;
-  @observable title: string;
-  @observable route: string;
+  @observable
+  public active: boolean;
+
+  @observable
+  public title: string;
+
+  @observable
+  public route: string;
 
   constructor(title: string, route: string, active: boolean) {
     this.title = title;
@@ -13,7 +18,8 @@ export class NavigationTab {
 }
 
 export class NavigationService {
-  @observable tabs: NavigationTab[];
+  @observable
+  public tabs: NavigationTab[];
 
   constructor() {
     this.tabs = [

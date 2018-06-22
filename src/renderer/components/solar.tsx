@@ -6,7 +6,7 @@ import './solar.scss';
 
 @observer
 export class Solar extends React.Component<{}, {}> {
-  render() {
+  public render() {
     return <div />;
   }
 }

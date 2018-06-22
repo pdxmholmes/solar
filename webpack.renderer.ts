@@ -27,18 +27,18 @@ module.exports = {
         test: /\.css$/,
         use: [
           {
-            loader: 'style-loader',            
+            loader: 'style-loader',
           },
           {
             loader: 'css-loader'
           }
         ]
-      },      
+      },
       {
         test: /\.global\.scss$/,
         use: [
           {
-            loader: 'style-loader'            
+            loader: 'style-loader'
           },
           {
             loader: 'css-loader',
