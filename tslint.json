@@ -1,8 +1,9 @@
 {
-  "extends": "tslint:latest",
+  "extends": ["tslint:latest", "tslint-react" ],
   "rules": {
     "arrow-parens": false,
     "interface-name": false,
+    "jsx-no-multiline-js": false,
     "max-classes-per-file": false,
     "no-console": false,
     "no-implicit-dependencies": [true,

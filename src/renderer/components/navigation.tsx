@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { observable } from 'mobx';
 import { observer } from 'mobx-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { esiService } from '../services';
 import { Character } from '../models';
 
@@ -20,7 +21,7 @@ export class NavigationItem extends React.Component<NavigationItemProps, {}> {
   public render() {
     const { character } = this.props;
     return (
-      <li className="nav-item" key={character.id}>
+      <li className="nav-item">
         <a href="#" onClick={this.onNavigate} className="nav-link">{character.name}</a>
       </li>
     );
@@ -39,11 +40,14 @@ export class Navigation extends React.Component<NavigationProps, {}> {
       <nav className="col-md-2 d-none d-md-block bg-light sidebar">
         <div className="sidebar-sticky">
           <h6 className="sidebar-heading text-muted">
-            <span><a href="#" onClick={this.onNewCharacter}>Characters</a></span>
+            <span>
+              Characters
+              <a href="#" onClick={this.onNewCharacter}><FontAwesomeIcon icon="plus" /></a>
+            </span>
           </h6>
           <ul className="nav flex-column">
             {characters.map(character =>
-              <NavigationItem character={character} />
+              <NavigationItem key={character.id} character={character} />
             )}
           </ul>
         </div>
