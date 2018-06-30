@@ -4,6 +4,7 @@ import * as request from 'request-promise';
 import * as uuid from 'uuid';
 import { rootStore, RefreshState, Character } from '../models';
 import { storageService } from '.';
+import { messages } from '../../common';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -23,7 +24,7 @@ class EsiService {
   private sessions: string[] = [];
 
   constructor() {
-    ipcRenderer.on('sso:received-auth-code', this.receiveAuthCode.bind(this));
+    ipcRenderer.on(messages.sso.receivedAuthCode, this.receiveAuthCode.bind(this));
   }
 
   public authenticateNewCharacter() {
@@ -41,6 +42,30 @@ class EsiService {
     shell.openExternal(`${loginUrl}?${querystring.stringify(params)}`);
   }
 
+  public refreshCharacter(character: Character) {
+    return request.post(authorizeUrl, {
+      headers: {
+        authorization: `Basic: ${this.getAuthorization()}`
+      },
+      form: {
+        grant_type: 'refresh_token',
+        refresh_token: character.refreshToken
+      },
+      json: true
+    })
+      .then(response => {
+        character.refreshToken = response.refresh_token;
+        character.refreshState = RefreshState.upToDate;
+        character.refreshDetail = null;
+      })
+      .catch((error: Error) => {
+        character.refreshState = RefreshState.error;
+        character.refreshDetail = error.message;
+      })
+      .finally(() =>
+        storageService.save<Character>(`character-${character.id.toString()}`, character));
+  }
+
   private receiveAuthCode(_, {code, state}) {
     if (!code || !state) {
       return;
@@ -52,13 +77,9 @@ class EsiService {
       return;
     }
 
-    const authorization =
-      Buffer.from(`${rootStore.configuration.clientId}:${rootStore.configuration.clientSecret}`)
-      .toString('base64');
-
     request.post(authorizeUrl, {
       headers: {
-        authorization: `Basic ${authorization}`
+        authorization: `Basic ${this.getAuthorization()}`
       },
       form: {
         grant_type: 'authorization_code',
@@ -87,6 +108,11 @@ class EsiService {
         rootStore.addCharacter(character);
         return storageService.save<Character>(`character-${character.id.toString()}`, character);
       });
+  }
+
+  private getAuthorization(): string {
+    return Buffer.from(`${rootStore.configuration.clientId}:${rootStore.configuration.clientSecret}`)
+      .toString('base64');
   }
 }
 

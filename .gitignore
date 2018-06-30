@@ -74,3 +74,6 @@ typings/
 
 # Built files
 dist/
+
+# Data files
+tools/*.json

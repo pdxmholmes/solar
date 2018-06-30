@@ -11,15 +11,18 @@
     "lint": "tslint -p .",
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "webpack --config webpack.main.ts --require ts-node/register",
-    "build:renderer": "webpack --config webpack.renderer.ts --require ts-node/register"
+    "build:renderer": "webpack --config webpack.renderer.ts --require ts-node/register",
+    "build:skills": "ts-node ./tools/build-skill-data.ts"
   },
   "author": "",
   "license": "BSD-3-Clause",
   "devDependencies": {
     "@types/bluebird": "^3.5.20",
+    "@types/bluebird-global": "^3.5.5",
     "@types/bootstrap": "^4.1.1",
     "@types/express": "^4.16.0",
     "@types/html-webpack-plugin": "^2.30.3",
+    "@types/lodash": "^4.14.110",
     "@types/minimist": "^1.2.0",
     "@types/node": "^10.3.1",
     "@types/react": "^16.3.16",
@@ -62,6 +65,7 @@
     "@fortawesome/react-fontawesome": "0.1.0-11",
     "bluebird": "^3.5.1",
     "glob-promise": "^3.4.0",
+    "lodash": "^4.17.10",
     "minimist": "^1.2.0",
     "mobx": "^5.0.0",
     "mobx-react": "^5.2.0",

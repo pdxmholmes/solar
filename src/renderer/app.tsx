@@ -25,6 +25,8 @@ import { ipcRenderer } from 'electron';
 
 library.add(far, fas, fab);
 
+import { messages } from '../common';
+
 // configure mobx
 configure({
   enforceActions: true
@@ -54,9 +56,10 @@ class Solar extends React.Component<{ store: RootStore }, {}> {
   }
 }
 
-rootStore.loadConfiguration()
-  .then(() => rootStore.loadCharacters())
-  .then(() => {
+Promise.all([
+  rootStore.loadConfiguration(),
+  rootStore.loadCharacters()
+]).then(() => {
     ReactDOM.render(
       <Solar store={rootStore} />,
       document.getElementById('root')
@@ -64,5 +67,5 @@ rootStore.loadConfiguration()
   })
   .catch(error => {
     alert(`Something went terribly wrong starting Solar. Pleaee file a GitHub issue: ${error}`);
-    ipcRenderer.sendSync('solar:fatal-error', { error });
+    ipcRenderer.sendSync(messages.fatalError, { error });
   });

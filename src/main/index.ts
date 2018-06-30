@@ -1,7 +1,9 @@
 import * as http from 'http';
 import * as url from 'url';
-import { app, BrowserWindow, protocol } from 'electron';
+import { app, BrowserWindow, protocol, ipcMain } from 'electron';
 import { Server } from 'net';
+
+import { messages } from '../common';
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -14,7 +16,7 @@ function setupSsoHandler() {
     server = http.createServer((request, response) => {
       const queryParameters = url.parse(request.url, true).query;
 
-      mainWindow.webContents.send('sso:received-auth-code', queryParameters);
+      mainWindow.webContents.send(messages.sso.receivedAuthCode, queryParameters);
 
       response.statusCode = 200;
       response.end();
@@ -55,5 +57,10 @@ app.on('ready', () => {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+  });
+
+  ipcMain.on(messages.fatalError, ({error}) => {
+    console.error(error);
+    app.exit(1);
   });
 });

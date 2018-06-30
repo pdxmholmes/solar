@@ -18,4 +18,7 @@ export class Character {
 
   @observable
   public refreshState: RefreshState;
+
+  @observable
+  public refreshDetail: string;
 }
