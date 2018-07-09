@@ -12,9 +12,9 @@
     "build": "npm run build:main && npm run build:renderer",
     "build:main": "webpack --config webpack.main.ts --require ts-node/register",
     "build:renderer": "webpack --config webpack.renderer.ts --require ts-node/register",
-    "build:skills": "ts-node ./tools/build-skill-data.ts"
+    "build:static-data": "ts-node ./tools/build-static-data.ts"
   },
-  "author": "",
+  "author": "Sertan Deras @ GoonSwarm",
   "license": "BSD-3-Clause",
   "devDependencies": {
     "@types/bluebird": "^3.5.20",
@@ -70,6 +70,7 @@
     "mobx": "^5.0.0",
     "mobx-react": "^5.2.0",
     "moment": "^2.22.2",
+    "promise-retry": "^1.1.1",
     "react": "^16.4.0",
     "react-dom": "^16.4.0",
     "react-router-dom": "^4.3.1",

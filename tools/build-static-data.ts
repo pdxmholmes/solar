@@ -52,15 +52,64 @@ type EveType = {
   volume?: number;
 };
 
+type EveDogmaAttribute = {
+  attribute_id: number;
+  default_value?: number;
+  description?: string;
+  display_name?: string;
+  high_is_good?: boolean;
+  icon_id?: number;
+  name?: string;
+  published?: boolean;
+  stackable?: boolean;
+  unit_id?: number;
+};
+
 function esiUrl(resource) {
   return `${host}/${version}${resource}/?datasource=${datasource}&language=${lang}`;
 }
 
 class SkillDataBuilder {
+  private attributes: EveDogmaAttribute[] = [];
   private groups: EveGroup[] = [];
   private types: EveType[] = [];
 
   public build(): Promise<void> {
+    return Promise.all([
+      this.getAttributes(),
+      this.getSkills()
+    ])
+    .then(([attributes, skills]) =>
+      new Promise<void>((resolve, reject) => {
+        fs.writeFile(
+          path.join(__dirname, 'skills.json'),
+          JSON.stringify({
+            attributes,
+            ...skills
+          }),
+          err => err ? reject(err) : resolve());
+      }));
+  }
+
+  private getAttributes(): Promise<{}> {
+    return this.getDogmaAttributes()
+      .then(attributes => attributes.map(attribute => ({
+        id: attribute.attribute_id,
+        name: attribute.name,
+        displayName: attribute.display_name,
+        description: attribute.description
+      })));
+  }
+
+  private getDogmaAttributes(): Promise<EveDogmaAttribute[]> {
+    return request.get(esiUrl('/dogma/attributes'), {
+      json: true
+    }).promise()
+      .then(attributeIds => Promise.mapSeries(attributeIds,
+        id => request.get(esiUrl(`/dogma/attributes/${id}`), { json: true })));
+  }
+
+  private getSkills(): Promise<{}> {
     return this.getSkillCategory()
       .then(category => this.getSkillGroups(category))
       .then(groups => this.groups = groups)
@@ -82,12 +131,7 @@ class SkillDataBuilder {
           }))
         };
 
-        return new Promise<void>((resolve, reject) => {
-          fs.writeFile(
-            path.join(__dirname, 'skills.json'),
-            JSON.stringify(skills),
-            err => err ? reject(err) : resolve());
-        });
+        return skills;
       });
   }
 
