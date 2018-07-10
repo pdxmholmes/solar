@@ -58,6 +58,7 @@ class Solar extends React.Component<{ store: RootStore }, {}> {
 
 Promise.all([
   rootStore.loadConfiguration(),
+  rootStore.loadStaticData(),
   rootStore.loadCharacters()
 ]).then(() => {
     ReactDOM.render(

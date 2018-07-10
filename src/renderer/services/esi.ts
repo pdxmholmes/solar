@@ -1,8 +1,9 @@
+import * as Promise from 'bluebird';
 import { shell, ipcRenderer } from 'electron';
 import * as querystring from 'querystring';
 import * as request from 'request-promise';
 import * as uuid from 'uuid';
-import { rootStore, RefreshState, Character } from '../models';
+import { rootStore, RefreshState, Character, Skill } from '../models';
 import { storageService } from '.';
 import { messages } from '../../common';
 
@@ -42,10 +43,10 @@ class EsiService {
     shell.openExternal(`${loginUrl}?${querystring.stringify(params)}`);
   }
 
-  public refreshCharacter(character: Character) {
+  public refreshCharacter(character: Character): Promise<Character> {
     return request.post(authorizeUrl, {
       headers: {
-        authorization: `Basic: ${this.getAuthorization()}`
+        authorization: `Basic ${this.getAuthorization()}`
       },
       form: {
         grant_type: 'refresh_token',
@@ -56,14 +57,31 @@ class EsiService {
       .then(response => {
         character.refreshToken = response.refresh_token;
         character.refreshState = RefreshState.upToDate;
+        character.accessToken = response.access_token;
         character.refreshDetail = null;
+        return this.getSkills(character);
       })
       .catch((error: Error) => {
         character.refreshState = RefreshState.error;
         character.refreshDetail = error.message;
+        return character;
       })
-      .finally(() =>
-        storageService.save<Character>(`character-${character.id.toString()}`, character));
+      .finally(() => storageService.save<Character>(`character-${character.id.toString()}`, character));
+  }
+
+  public getSkills(character: Character): Promise<Character> {
+    return request.get(`https://esi.evetech.net/latest/characters/${character.id}/skills`, {
+      headers: {
+        authorization: `Bearer ${character.accessToken}`
+      },
+      json: true
+    })
+      .then(({skills, total_sp, unallocated_sp}) => {
+        // character.skills = skills.map(skill => )
+        character.totalSkillPoints = total_sp;
+        character.unallocatedSkillPoints = unallocated_sp || 0;
+        return character;
+      });
   }
 
   private receiveAuthCode(_, {code, state}) {

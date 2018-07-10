@@ -1,4 +1,5 @@
 import { observable } from 'mobx';
+import { Skill } from './skills';
 
 export enum RefreshState {
   refreshing = 'refreshing',
@@ -20,5 +21,20 @@ export class Character {
   public refreshState: RefreshState;
 
   @observable
+  public accessToken: string;
+
+  @observable
+  public expires: Date;
+
+  @observable
   public refreshDetail: string;
+
+  @observable
+  public skills: Skill[];
+
+  @observable
+  public totalSkillPoints: number;
+
+  @observable
+  public unallocatedSkillPoints: number;
 }
