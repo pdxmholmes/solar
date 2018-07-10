@@ -1,4 +1,4 @@
-import * as Bluebird from 'bluebird';
+import * as Promise from 'bluebird';
 import * as fs from 'fs';
 
 declare module 'fs' {
@@ -22,4 +22,4 @@ declare module 'fs' {
       flag?: string; } | string | undefined | null): Promise<void>;
 }
 
-export const asyncFs = Bluebird.promisifyAll(fs);
+export const asyncFs = Promise.promisifyAll(fs);

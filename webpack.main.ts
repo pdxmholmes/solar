@@ -22,7 +22,10 @@ module.exports = {
             loader: 'awesome-typescript-loader'
           }
         ],
-        include: path.join(__dirname, 'src/main')
+        include: [
+          path.join(__dirname, 'src/common'),
+          path.join(__dirname, 'src/main')
+        ]
       }
     ]
   },

@@ -78,7 +78,6 @@
     "react-dom": "^16.4.0",
     "react-router-dom": "^4.3.1",
     "request-promise": "^4.2.2",
-    "sqlite": "^2.9.2",
     "uuid": "^3.2.1"
   }
 }

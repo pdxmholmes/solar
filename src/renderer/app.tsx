@@ -36,7 +36,7 @@ const isDevelopment = process.env.NODE_ENV !== 'production';
 
 // Bluebird/Promise magic
 declare global {
-  export interface Promise<T> extends Bluebird<T> {}
+  export interface Promise<T> extends Bluebird<T> { }
 }
 
 @observer
@@ -58,14 +58,13 @@ class Solar extends React.Component<{ store: RootStore }, {}> {
 
 Promise.all([
   rootStore.loadConfiguration(),
-  rootStore.loadStaticData(),
   rootStore.loadCharacters()
 ]).then(() => {
-    ReactDOM.render(
-      <Solar store={rootStore} />,
-      document.getElementById('root')
-    );
-  })
+  ReactDOM.render(
+    <Solar store={rootStore} />,
+    document.getElementById('root')
+  );
+})
   .catch(error => {
     alert(`Something went terribly wrong starting Solar. Pleaee file a GitHub issue: ${error}`);
     ipcRenderer.sendSync(messages.fatalError, { error });
