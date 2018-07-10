@@ -1,35 +1,12 @@
 import * as React from 'react';
-import { observable } from 'mobx';
 import { observer } from 'mobx-react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { esiService } from '../services';
 import { Character } from '../models';
-
-const styles = require('./navigation.scss');
+import { NavigationItem } from './navigation-item';
 
 interface NavigationProps {
   characters: Character[];
-}
-
-interface NavigationItemProps {
-  character: Character;
-}
-
-console.log(Object.keys(styles));
-
-export class NavigationItem extends React.Component<NavigationItemProps, {}> {
-  public render() {
-    const { character } = this.props;
-    return (
-      <li className="nav-item">
-        <a href="#" onClick={this.onNavigate} className="nav-link">{character.name}</a>
-      </li>
-    );
-  }
-
-  private onNavigate = () => {
-    return;
-  }
 }
 
 @observer
