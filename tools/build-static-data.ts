@@ -1,10 +1,9 @@
 import * as Promise from 'bluebird';
-global.Promise = Promise;
-
 import * as path from 'path';
 import * as fs from 'fs';
-import {flatten} from 'lodash';
+import { flatten, chunk, unionBy } from 'lodash';
 import * as request from 'request-promise';
+import { retryPromise } from '../src/common/retry';
 
 const host = 'https://esi.evetech.net';
 const datasource = 'tranquility';
@@ -69,30 +68,47 @@ function esiUrl(resource) {
   return `${host}/${version}${resource}/?datasource=${datasource}&language=${lang}`;
 }
 
+function esiRequest<T>(resource): Promise<T> {
+  return retryPromise((retry, _) => {
+    return request.get(esiUrl(resource), { json: true })
+      .promise()
+      .catch(error => {
+        console.error(error);
+        return retry(error);
+      });
+  });
+}
+
 class SkillDataBuilder {
   private attributes: EveDogmaAttribute[] = [];
   private groups: EveGroup[] = [];
   private types: EveType[] = [];
 
   public build(): Promise<void> {
-    return Promise.all([
-      this.getAttributes(),
-      this.getSkills()
-    ])
-    .then(([attributes, skills]) =>
-      new Promise<void>((resolve, reject) => {
-        fs.writeFile(
-          path.join(__dirname, 'skills.json'),
-          JSON.stringify({
-            attributes,
-            ...skills
-          }),
-          err => err ? reject(err) : resolve());
-      }));
+    return this.getSkills()
+      .then(({ groups, skills }) => {
+        const attributesToFetch = skills.reduce((accum, skill) => {
+          accum = unionBy(accum, skill.attributes, 'id');
+          return accum;
+        }, []).map(attribute => attribute.id);
+
+        return Promise.props({
+          attributes: this.getAttributes(attributesToFetch),
+          groups,
+          skills
+        });
+      })
+      .then(data =>
+        new Promise<void>((resolve, reject) => {
+          fs.writeFile(
+            path.join(__dirname, 'static.json'),
+            JSON.stringify(data),
+            err => err ? reject(err) : resolve());
+        }));
   }
 
-  private getAttributes(): Promise<{}> {
-    return this.getDogmaAttributes()
+  private getAttributes(attributeIds: number[]): Promise<{}> {
+    return this.getDogmaAttributes(attributeIds)
       .then(attributes => attributes.map(attribute => ({
         id: attribute.attribute_id,
         name: attribute.name,
@@ -101,15 +117,18 @@ class SkillDataBuilder {
       })));
   }
 
-  private getDogmaAttributes(): Promise<EveDogmaAttribute[]> {
-    return request.get(esiUrl('/dogma/attributes'), {
-      json: true
-    }).promise()
-      .then(attributeIds => Promise.mapSeries(attributeIds,
-        id => request.get(esiUrl(`/dogma/attributes/${id}`), { json: true })));
+  private getDogmaAttributes(attributeIds: number[]): Promise<EveDogmaAttribute[]> {
+    console.log(`Fetching ${attributeIds.length} Dogma attributes...`);
+
+    const batches = chunk(attributeIds, 100);
+    return Promise.mapSeries<number[], EveDogmaAttribute[]>(batches, batch => {
+      console.log(`Fetching ${batch.length} attributes...`);
+      return Promise.mapSeries(batch, id => esiRequest(`/dogma/attributes/${id}`));
+    })
+      .then(batchResults => flatten(batchResults));
   }
 
-  private getSkills(): Promise<{}> {
+  private getSkills(): Promise<{ groups, skills }> {
     return this.getSkillCategory()
       .then(category => this.getSkillGroups(category))
       .then(groups => this.groups = groups)
@@ -127,7 +146,12 @@ class SkillDataBuilder {
             description: type.description,
             groupId: type.group_id,
             iconId: type.icon_id,
-            graphicId: type.graphic_id
+            graphicId: type.graphic_id,
+            attributes: type.dogma_attributes ?
+              type.dogma_attributes.map(attribute => ({
+                id: attribute.attribute_id,
+                value: attribute.value
+              })) : []
           }))
         };
 
@@ -135,19 +159,14 @@ class SkillDataBuilder {
       });
   }
 
-  private getSkillCategory(): Promise<EveCategory>  {
-    return request.get(esiUrl(`/universe/categories/${skillsCategory}`), {
-      json: true
-    }).promise();
+  private getSkillCategory(): Promise<EveCategory> {
+    return esiRequest(`/universe/categories/${skillsCategory}`);
   }
 
   private getSkillGroups(category: EveCategory): Promise<EveGroup[]> {
     console.log(`Fetching ${category.groups.length} category groups...`);
-    return Promise.all(category.groups.map(group =>
-      request.get(esiUrl(`/universe/groups/${group}`), {
-        json: true
-      })))
-    .then(groups => flatten(groups));
+    return Promise.all(category.groups.map(group => esiRequest<EveGroup>(`/universe/groups/${group}`)))
+      .then(groups => flatten(groups));
   }
 
   private getSkillTypes(groups: EveGroup[]): Promise<EveType[]> {

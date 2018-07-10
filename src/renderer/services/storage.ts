@@ -1,8 +1,7 @@
-import * as Bluebird from 'bluebird';
 import * as path from 'path';
 import { remote } from 'electron';
 import * as glob from 'glob-promise';
-import { asyncFs } from '../lib/fs';
+import { asyncFs } from '../../common/fs';
 
 class StorageService {
   public async getUserStoragePath(): Promise<string> {
