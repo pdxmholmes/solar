@@ -23,22 +23,26 @@ export class Solar extends React.Component<SolarProps, {}> {
       <Router>
         <div className="container-fluid">
           <div className="row">
-            <div className="col-md-2">
+            <div className="col-sm-4">
               <Navigation characters={characters} />
             </div>
 
-            <div className="col-md-10">
-              <Route exact={true} path="/" component={Dashboard} />
-              <Route path="/character/:id" render={this.renderCharacterDetail}/>
+            <div className="col-md-10 col-sm-8">
+              <Route exact={true} path="/" render={this.renderDashboard} />
+              <Route path="/character/:id" render={this.renderCharacterDetail} />
             </div>
           </div>
 
           {isDevelopment &&
             <DevTools />
-         }
+          }
         </div>
       </Router>
     );
+  }
+
+  private renderDashboard = (props: RouteComponentProps<any>) => {
+    return <Dashboard store={this.props.store} {...props} />;
   }
 
   private renderCharacterDetail = (props: RouteComponentProps<any>) => {

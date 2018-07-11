@@ -19,7 +19,8 @@ declare module 'fs' {
     options?: {
       encoding?: string | null;
       mode?: number | string;
-      flag?: string; } | string | undefined | null): Promise<void>;
+      flag?: string;
+    } | string | undefined | null): Promise<void>;
 }
 
 export const asyncFs = Promise.promisifyAll(fs);

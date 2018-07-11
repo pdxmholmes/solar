@@ -47,7 +47,7 @@ app.on('ready', () => {
 
   setupSsoHandler();
 
-  mainWindow.loadURL(`file://${__dirname}/index.html`);
+  mainWindow.loadURL('http://localhost:3000/dist/index.html');
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.show();
     mainWindow.focus();
@@ -59,7 +59,7 @@ app.on('ready', () => {
     mainWindow = null;
   });
 
-  ipcMain.on(messages.fatalError, ({error}) => {
+  ipcMain.on(messages.fatalError, ({ error }) => {
     console.error(error);
     app.exit(1);
   });

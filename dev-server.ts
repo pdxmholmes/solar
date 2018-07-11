@@ -25,6 +25,11 @@ const wdm = webpackDevMiddleware(compiler, {
 app.use(wdm);
 app.use(webpackHotMiddleware(compiler));
 
+// Make HMR + react router play nice
+app.get('/', (req, res) => {
+  res.redirect('/dist/index.html');
+});
+
 const server = app.listen(port, 'localhost', error => {
   if (error) {
     return console.error(error);

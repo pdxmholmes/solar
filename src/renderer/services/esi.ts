@@ -84,7 +84,7 @@ class EsiService {
       },
       json: true
     })
-      .then(({skills, total_sp, unallocated_sp}) => {
+      .then(({ skills, total_sp, unallocated_sp }) => {
         character.skills = skills.map(skill => new Skill(
           skill.skill_id,
           skill.active_skill_level,
@@ -112,7 +112,7 @@ class EsiService {
       });
   }
 
-  private receiveAuthCode(_, {code, state}) {
+  private receiveAuthCode(_, { code, state }) {
     if (!code || !state) {
       return;
     }
@@ -133,11 +133,16 @@ class EsiService {
       },
       json: true
     })
-      .then(response => this.verifyCharacter(response.access_token, response.refresh_token))
+      .then(response =>
+        this.verifyCharacter(
+          response.access_token,
+          response.refresh_token,
+          response.access_token
+        ))
       .catch(err => console.error(err));
   }
 
-  private verifyCharacter(bearerToken: string, refreshToken: string) {
+  private verifyCharacter(bearerToken: string, refreshToken: string, accessToken: string) {
     return request.get(characterVerifyUrl, {
       headers: {
         authorization: `Bearer ${bearerToken}`
@@ -149,10 +154,17 @@ class EsiService {
         character.id = response.CharacterID;
         character.name = response.CharacterName;
         character.refreshToken = refreshToken;
+        character.accessToken = accessToken;
         character.refreshState = RefreshState.upToDate;
 
-        rootStore.addCharacter(character);
-        return storageService.save<Character>(`character-${character.id.toString()}`, character);
+        return Promise.all([
+          this.getPortraits(character),
+          this.getSkills(character)
+        ])
+          .then(() => {
+            rootStore.addCharacter(character);
+            return storageService.save<Character>(`character-${character.id.toString()}`, character);
+          });
       });
   }
 

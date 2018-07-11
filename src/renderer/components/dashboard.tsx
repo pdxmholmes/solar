@@ -1,9 +1,15 @@
 import * as React from 'react';
+import { RootStore } from '../models';
+import { CharacterCard } from './character-card';
+import { RouteComponentProps } from 'react-router';
 
-export class Dashboard extends React.Component<{}, {}> {
+interface DashboardProps extends RouteComponentProps<any> {
+  store: RootStore;
+}
+
+export class Dashboard extends React.Component<DashboardProps, {}> {
   public render() {
-    return (
-      <h1>Hello World </h1>
-    );
+    const { characters } = this.props.store;
+    return characters.map(character => <CharacterCard key={character.id} character={character} />);
   }
 }
