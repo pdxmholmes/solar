@@ -7,9 +7,16 @@ export enum RefreshState {
   error = 'error'
 }
 
+export interface CharacterPortraits {
+  px64: string;
+  px128: string;
+  px256: string;
+  px512: string;
+}
+
 export class Character {
   @observable
-  public id: string;
+  public id: number;
 
   @observable
   public name: string;
@@ -37,4 +44,7 @@ export class Character {
 
   @observable
   public unallocatedSkillPoints: number;
+
+  @observable
+  public portraits: CharacterPortraits;
 }

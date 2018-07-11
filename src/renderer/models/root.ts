@@ -1,9 +1,12 @@
 import * as Promise from 'bluebird';
 import { action, observable } from 'mobx';
-import { Character, Configuration, StaticData } from './';
+import {
+  Character,
+  Configuration,
+  staticData,
+  StaticData,
+  SkillType } from './';
 import { storageService, esiService } from '../services';
-
-const staticData = require('../../../static/static.json');
 
 export class RootStore {
   public get staticData(): StaticData {

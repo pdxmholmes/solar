@@ -2,16 +2,14 @@ import * as Bluebird from 'bluebird';
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
 import { configure } from 'mobx';
-import { observer } from 'mobx-react';
-import DevTools from 'mobx-react-devtools';
 
 // import libraries bootstrap needs
 import 'bootstrap';
 import 'jquery';
 import 'popper.js';
 
-import { rootStore, RootStore } from './models';
-import { Navigation } from './components/navigation';
+import { rootStore } from './models';
+import { Solar } from './components/solar';
 
 // import global CSS
 import './app.global.scss';
@@ -39,29 +37,12 @@ declare global {
   export interface Promise<T> extends Bluebird<T> { }
 }
 
-@observer
-class Solar extends React.Component<{ store: RootStore }, {}> {
-  public render() {
-    const { configuration } = this.props.store;
-    return (
-      <div className="container-fluid">
-        <div className="row">
-          <Navigation characters={rootStore.characters} />
-        </div>
-        {isDevelopment &&
-          <DevTools />
-        }
-      </div>
-    );
-  }
-}
-
 Promise.all([
   rootStore.loadConfiguration(),
   rootStore.loadCharacters()
 ]).then(() => {
   ReactDOM.render(
-    <Solar store={rootStore} />,
+    <Solar store={rootStore} isDevelopment={isDevelopment} />,
     document.getElementById('root')
   );
 })

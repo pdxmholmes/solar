@@ -3,7 +3,12 @@ import { shell, ipcRenderer } from 'electron';
 import * as querystring from 'querystring';
 import * as request from 'request-promise';
 import * as uuid from 'uuid';
-import { rootStore, RefreshState, Character, Skill } from '../models';
+import {
+  rootStore,
+  RefreshState,
+  Character,
+  Skill
+} from '../models';
 import { storageService } from '.';
 import { messages } from '../../common';
 
@@ -59,7 +64,10 @@ class EsiService {
         character.refreshState = RefreshState.upToDate;
         character.accessToken = response.access_token;
         character.refreshDetail = null;
-        return this.getSkills(character);
+        return Promise.all([
+          this.getPortraits(character),
+          this.getSkills(character)
+        ]).then(() => character);
       })
       .catch((error: Error) => {
         character.refreshState = RefreshState.error;
@@ -77,9 +85,29 @@ class EsiService {
       json: true
     })
       .then(({skills, total_sp, unallocated_sp}) => {
-        // character.skills = skills.map(skill => )
+        character.skills = skills.map(skill => new Skill(
+          skill.skill_id,
+          skill.active_skill_level,
+          skill.trained_skill_level
+        ));
         character.totalSkillPoints = total_sp;
         character.unallocatedSkillPoints = unallocated_sp || 0;
+        return character;
+      });
+  }
+
+  public getPortraits(character: Character): Promise<Character> {
+    return request.get(`https://esi.evetech.net/latest/characters/${character.id}/portrait`, {
+      json: true
+    })
+      .then(portraits => {
+        character.portraits = {
+          px64: portraits.px64x64,
+          px128: portraits.px128x128,
+          px256: portraits.px256x256,
+          px512: portraits.px512x512
+        };
+
         return character;
       });
   }

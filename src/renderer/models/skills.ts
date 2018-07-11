@@ -3,8 +3,17 @@ import { SkillType } from './';
 
 export class Skill {
   @observable
-  public type: SkillType;
+  public typeId: number;
 
   @observable
-  public level: number;
+  public activeLevel: number;
+
+  @observable
+  public trainedLevel: number;
+
+  constructor(typeId: number, activeLevel: number, trainedLevel: number) {
+    this.typeId = typeId;
+    this.activeLevel = activeLevel;
+    this.trainedLevel = trainedLevel;
+  }
 }

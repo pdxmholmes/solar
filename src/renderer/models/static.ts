@@ -26,8 +26,25 @@ export class SkillType {
     }) { }
 }
 
-export class StaticData {
-  public attributes: DogmaAttribute[] = [];
-  public groups: SkillGroup[] = [];
-  public skills: SkillType[] = [];
+export interface StaticData {
+  attributes: DogmaAttribute[];
+  groups: SkillGroup[];
+  skills: SkillType[];
+
+  getSkillTypeById(id: number): SkillType;
+  getSkillGroupById(id: number): SkillGroup;
+  getDogmaAttributeById(id: number): DogmaAttribute;
 }
+
+export const staticData = require('../../../static/static.json') as StaticData;
+staticData.getSkillTypeById = (id: number): SkillType => {
+  return staticData.skills.find(skill => skill.id === id);
+};
+
+staticData.getSkillGroupById = (id: number): SkillGroup => {
+  return staticData.groups.find(group => group.id === id);
+};
+
+staticData.getDogmaAttributeById = (id: number): DogmaAttribute => {
+  return staticData.attributes.find(attribute => attribute.id === id);
+};
