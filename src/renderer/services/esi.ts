@@ -7,7 +7,8 @@ import {
   rootStore,
   RefreshState,
   Character,
-  Skill
+  Skill,
+  QueuedSkill
 } from '../models';
 import { storageService } from '.';
 import { messages } from '../../common';
@@ -66,7 +67,8 @@ class EsiService {
         character.refreshDetail = null;
         return Promise.all([
           this.getPortraits(character),
-          this.getSkills(character)
+          this.getSkills(character),
+          this.getSkillQueue(character)
         ]).then(() => character);
       })
       .catch((error: Error) => {
@@ -92,6 +94,28 @@ class EsiService {
         ));
         character.totalSkillPoints = total_sp;
         character.unallocatedSkillPoints = unallocated_sp || 0;
+        return character;
+      });
+  }
+
+  public getSkillQueue(character: Character): Promise<Character> {
+    return request.get(`https://esi.evetech.net/latest/characters/${character.id}/skillqueue`, {
+      headers: {
+        authorization: `Bearer ${character.accessToken}`
+      },
+      json: true
+    })
+      .then(queue => {
+        character.skillQueue = queue.map(skill => new QueuedSkill(
+          skill.finish_date ? new Date(skill.finish_date) : null,
+          skill.finished_level,
+          skill.level_start_sp,
+          skill.level_end_sp,
+          skill.queue_position,
+          skill.skill_id,
+          skill.start_date ? new Date(skill.start_date) : null,
+          skill.training_start_sp
+        ));
         return character;
       });
   }
@@ -159,7 +183,8 @@ class EsiService {
 
         return Promise.all([
           this.getPortraits(character),
-          this.getSkills(character)
+          this.getSkills(character),
+          this.getSkillQueue(character)
         ])
           .then(() => {
             rootStore.addCharacter(character);

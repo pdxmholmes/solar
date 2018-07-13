@@ -1,4 +1,5 @@
 import * as React from 'react';
+import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
 import { Character } from '../models';
 
@@ -8,6 +9,7 @@ interface NavigationItemProps {
   character: Character;
 }
 
+@observer
 export class NavigationItem extends React.Component<NavigationItemProps, {}> {
   public render() {
     const { character } = this.props;

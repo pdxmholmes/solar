@@ -47,6 +47,7 @@ app.on('ready', () => {
 
   setupSsoHandler();
 
+  // TODO: Gate this on development, load the file directly for prod
   mainWindow.loadURL('http://localhost:3000/dist/index.html');
   mainWindow.webContents.on('did-finish-load', () => {
     mainWindow.show();

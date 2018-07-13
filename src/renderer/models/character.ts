@@ -1,5 +1,5 @@
 import { observable } from 'mobx';
-import { Skill } from './skills';
+import { Skill, QueuedSkill } from './skills';
 
 export enum RefreshState {
   refreshing = 'refreshing',
@@ -38,6 +38,9 @@ export class Character {
 
   @observable
   public skills: Skill[];
+
+  @observable
+  public skillQueue: QueuedSkill[];
 
   @observable
   public totalSkillPoints: number;
