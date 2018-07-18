@@ -1,5 +1,6 @@
 import { observable } from 'mobx';
 import { Skill, QueuedSkill } from './skills';
+import { IStorageWritable } from '../services';
 
 export enum RefreshState {
   refreshing = 'refreshing',
@@ -14,24 +15,17 @@ export interface CharacterPortraits {
   px512: string;
 }
 
-export class Character {
-  @observable
+export class Character implements IStorageWritable {
   public id: number;
+  public refreshToken: string;
+  public accessToken: string;
+  public expires: Date;
 
   @observable
   public name: string;
 
   @observable
-  public refreshToken: string;
-
-  @observable
   public refreshState: RefreshState;
-
-  @observable
-  public accessToken: string;
-
-  @observable
-  public expires: Date;
 
   @observable
   public refreshDetail: string;
@@ -50,4 +44,17 @@ export class Character {
 
   @observable
   public portraits: CharacterPortraits;
+
+  public asWritable(): any {
+    return {
+      id: this.id,
+      name: this.name,
+      refreshToken: this.refreshToken,
+      skills: this.skills,
+      skillQueue: this.skillQueue,
+      totalSkillPoints: this.totalSkillPoints,
+      unallocatedSkillPoints: this.unallocatedSkillPoints,
+      portraits: this.portraits
+    };
+  }
 }

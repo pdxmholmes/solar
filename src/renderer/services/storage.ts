@@ -3,6 +3,10 @@ import { remote } from 'electron';
 import * as glob from 'glob-promise';
 import { asyncFs } from '../../common/fs';
 
+export interface IStorageWritable {
+  asWritable(): any;
+}
+
 class StorageService {
   public async getUserStoragePath(): Promise<string> {
     try {
@@ -51,12 +55,12 @@ class StorageService {
     }
   }
 
-  public async save<T>(name: string, data: T): Promise<void> {
+  public async save<T extends IStorageWritable>(name: string, data: T): Promise<void> {
     try {
       const storagePath = await this.getUserStoragePath();
       const dataFilePath = path.join(storagePath, `${name}.json`);
 
-      const json = JSON.stringify(data, null, 2);
+      const json = JSON.stringify(data.asWritable(), null, 2);
       await asyncFs.writeFileAsync(dataFilePath, json);
     } catch (e) {
       console.error(e);
