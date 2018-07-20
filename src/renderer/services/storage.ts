@@ -22,7 +22,7 @@ class StorageService {
     }
   }
 
-  public async load<T>(file: string): Promise<T> {
+  public async load<T>(file: string, klass: {new(data: any): T}): Promise<T> {
     try {
       const storagePath = await this.getUserStoragePath();
       const dataFilePath = path.join(storagePath, `${file}.json`);
@@ -34,13 +34,13 @@ class StorageService {
 
       const data = await asyncFs.readFileAsync(dataFilePath);
       const json = data.toString('utf-8');
-      return JSON.parse(json) as T;
+      return new klass(JSON.parse(json));
     } catch (e) {
       console.error(e);
     }
   }
 
-  public async loadAll<T>(pattern: string): Promise<T[]> {
+  public async loadAll<T>(pattern: string, klass: {new(data: any): T}): Promise<T[]> {
     try {
       const storagePath = await this.getUserStoragePath();
       const files = await glob(pattern, {
@@ -49,7 +49,7 @@ class StorageService {
       });
 
       const names = files.map(file => path.basename(file, '.json'));
-      return Promise.all(names.map(name => this.load<T>(name)));
+      return Promise.all(names.map(name => this.load<T>(name, klass)));
     } catch (e) {
       console.error(e);
     }

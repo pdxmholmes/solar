@@ -8,7 +8,8 @@ import {
   RefreshState,
   Character,
   Skill,
-  QueuedSkill
+  QueuedSkill,
+  CharacterAttributes
 } from '../models';
 import { storageService } from '.';
 import { messages } from '../../common';
@@ -66,6 +67,7 @@ class EsiService {
         character.accessToken = response.access_token;
         character.refreshDetail = null;
         return Promise.all([
+          this.getAttributes(character),
           this.getPortraits(character),
           this.getSkills(character),
           this.getSkillQueue(character)
@@ -136,6 +138,20 @@ class EsiService {
       });
   }
 
+  public getAttributes(character: Character): Promise<Character> {
+    return request.get(`https://esi.evetech.net/latest/characters/${character.id}/attributes`, {
+      headers: {
+        authorization: `Bearer ${character.accessToken}`
+      },
+      json: true
+    })
+      .then(attributes => {
+        console.log(attributes);
+        character.attributes = new CharacterAttributes(attributes);
+        return character;
+      });
+  }
+
   private receiveAuthCode(_, { code, state }) {
     if (!code || !state) {
       return;
@@ -182,6 +198,7 @@ class EsiService {
         character.refreshState = RefreshState.upToDate;
 
         return Promise.all([
+          this.getAttributes(character),
           this.getPortraits(character),
           this.getSkills(character),
           this.getSkillQueue(character)

@@ -1,18 +1,9 @@
 import * as Promise from 'bluebird';
 import { action, observable } from 'mobx';
-import {
-  Character,
-  Configuration,
-  staticData,
-  StaticData,
-  SkillType } from './';
+import { Character, Configuration } from './';
 import { storageService, esiService } from '../services';
 
 export class RootStore {
-  public get staticData(): StaticData {
-    return staticData;
-  }
-
   @observable
   public configuration: Configuration;
 
@@ -21,13 +12,13 @@ export class RootStore {
 
   @action.bound
   public loadConfiguration(): Promise<Configuration> {
-    return storageService.load<Configuration>('config')
+    return storageService.load<Configuration>('config', Configuration)
       .then(config => this.configuration = config);
   }
 
   @action.bound
   public loadCharacters(refresh: boolean = true): Promise<Character[]> {
-    return storageService.loadAll<Character>('character-*.json')
+    return storageService.loadAll<Character>('character-*.json', Character)
       .then(characters => {
         this.characters = characters || [];
 

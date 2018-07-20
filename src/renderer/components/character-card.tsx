@@ -1,22 +1,22 @@
 import * as React from 'react';
-import { Character, RootStore } from '../models';
+import { Character } from '../models';
+import { staticDataService } from '../services';
 
 const styles = require('./character-card.scss');
 
 interface CharacterCardProps {
-  store: RootStore;
   character: Character;
 }
 
 export class CharacterCard extends React.Component<CharacterCardProps, {}> {
   public render() {
-    const { character, store } = this.props;
+    const { character } = this.props;
     const currentlyTraining =
       character.skillQueue.length ?
       character.skillQueue.find(skill => skill.queuePosition === 0) :
       null;
     const currentlyTrainingType =
-      currentlyTraining ? store.staticData.getSkillTypeById(currentlyTraining.skillId) : null;
+      currentlyTraining ? staticDataService.getSkillTypeById(currentlyTraining.skillId) : null;
     const currentTrainingLabel = currentlyTrainingType ? currentlyTrainingType.name : 'None';
 
     return (

@@ -1,16 +1,16 @@
 import * as React from 'react';
-import { SkillGroup as EveSkillGroup, Character, RootStore } from '../models';
+import { SkillGroup as EveSkillGroup, Character } from '../models';
+import { staticDataService } from '../services';
 
 interface SkillGroupProps {
-  store: RootStore;
   group: EveSkillGroup;
   character: Character;
 }
 
 export class SkillGroup extends React.Component<SkillGroupProps, {}> {
   public render() {
-    const { group, store, character } = this.props;
-    const types = store.staticData.skills.filter(skill => skill.groupId === group.id);
+    const { group, character } = this.props;
+    const types = staticDataService.data.skills.filter(skill => skill.groupId === group.id);
     const skillsForCharacter = types.reduce((finalSkills, type) => {
       const skill = character.skills.find(s => s.typeId === type.id);
       if (skill) {

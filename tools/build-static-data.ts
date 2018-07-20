@@ -11,6 +11,7 @@ const lang = 'en-us';
 const version = 'latest';
 
 const skillsCategory = 16;
+const implantCategory = 20;
 
 type EveCategory = {
   category_id: number;

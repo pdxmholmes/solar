@@ -42,7 +42,7 @@ export class QueuedSkill {
 
 export class Skill {
   @observable
-  public typeId: number;
+  public skillId: number;
 
   @observable
   public activeLevel: number;
@@ -51,7 +51,7 @@ export class Skill {
   public trainedLevel: number;
 
   constructor(typeId: number, activeLevel: number, trainedLevel: number) {
-    this.typeId = typeId;
+    this.skillId = typeId;
     this.activeLevel = activeLevel;
     this.trainedLevel = trainedLevel;
   }

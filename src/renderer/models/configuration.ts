@@ -6,4 +6,9 @@ export class Configuration {
 
   @observable
   public clientSecret: string;
+
+  constructor(data: any) {
+    this.clientId = data.clientId;
+    this.clientSecret = data.clientSecret;
+  }
 }

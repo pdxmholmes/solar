@@ -15,11 +15,11 @@ export class Navigation extends React.Component<NavigationProps, {}> {
   public render() {
     const { characters } = this.props;
     return (
-      <nav className="col-md-12 d-none d-md-block bg-light sidebar">
+      <nav className="col-md-12 d-none d-md-block bg-primary sidebar">
         <div className="sidebar-sticky">
           <h6 className="sidebar-heading text-muted">
             <span>
-              <Link to="/">Characters</Link>
+              <Link to="/" className="nav-link">Characters</Link>
               <a href="#" onClick={this.onNewCharacter}><FontAwesomeIcon icon="plus" /></a>
             </span>
           </h6>
