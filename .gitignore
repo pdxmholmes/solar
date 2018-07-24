@@ -77,3 +77,6 @@ dist/
 
 # Data files
 tools/*.json
+
+# Ignore dump files
+*.dmp
