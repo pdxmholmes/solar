@@ -1,5 +1,6 @@
 import * as React from 'react';
-import { SkillGroup as EveSkillGroup, Character } from '../models';
+import { Character } from '../models';
+import { SkillGroup as EveSkillGroup } from '../../common/static';
 import { staticDataService } from '../services';
 
 interface SkillGroupProps {
@@ -10,9 +11,9 @@ interface SkillGroupProps {
 export class SkillGroup extends React.Component<SkillGroupProps, {}> {
   public render() {
     const { group, character } = this.props;
-    const types = staticDataService.data.skills.filter(skill => skill.groupId === group.id);
+    const types = staticDataService.data.skillData.skills.filter(skill => skill.groupId === group.id);
     const skillsForCharacter = types.reduce((finalSkills, type) => {
-      const skill = character.skills.find(s => s.typeId === type.id);
+      const skill = character.skills.find(s => s.skillId === type.id);
       if (skill) {
         finalSkills.push({
           type,

@@ -1,5 +1,4 @@
 import { observable } from 'mobx';
-import { SkillType } from './';
 
 export class QueuedSkill {
   @observable

@@ -1,11 +1,275 @@
 import * as Promise from 'bluebird';
 import * as path from 'path';
-import * as fs from 'fs';
-import { flatten, chunk, unionBy } from 'lodash';
+import { asyncFs } from '../src/common/fs';
+import { flatten, omit, sumBy } from 'lodash';
 import * as request from 'request-promise';
 import { retryPromise } from '../src/common/retry';
+import * as pg from 'pg-promise';
 
-const host = 'https://esi.evetech.net';
+const pgp = pg({
+  promiseLib: Promise
+});
+
+const db = pgp({
+  host: '0.0.0.0',
+  port: 45432,
+  database: 'eve',
+  user: 'yaml',
+  password: 'eve'
+});
+
+const skillsCategory = 16;
+const implantCategory = 20;
+
+const selectGroupsSql = `
+SELECT
+  "groupID" AS id,
+  "groupName" AS name
+FROM
+  evesde."invGroups"
+WHERE
+  "categoryID" = $[categoryId] AND
+  published = true
+`;
+
+const selectGroupTypesSql = `
+SELECT
+  "typeID" AS id,
+  "typeName" AS name,
+  description,
+  "basePrice",
+  "iconID" AS "iconId",
+  "graphicID" AS "graphicId"
+FROM
+  evesde."invTypes"
+WHERE
+  "groupID" = $[groupId] AND
+  published = true
+`;
+
+const selectTypeAttributesSql = `
+SELECT
+  "attributeID" AS id,
+  "valueInt",
+  "valueFloat"
+FROM
+  evesde."dgmTypeAttributes"
+WHERE
+  "typeID" = $[typeId]
+`;
+
+const selectAttributesSql = `
+SELECT
+  "attributeID" AS id,
+  "attributeName" AS name,
+  description,
+  "iconID" AS "iconId",
+  "defaultValue",
+  "displayName"
+FROM
+  evesde."dgmAttributeTypes"
+WHERE
+  "attributeID" = ANY($[attributeIds]::int[])
+`;
+
+const selectCompleteSkillSql = `
+WITH skill_groups AS(
+  SELECT
+    "groupID" AS id,
+    "groupName" AS name
+  FROM
+    evesde."invGroups"
+  WHERE
+    "categoryID" = 16 AND
+    published = true
+)
+SELECT
+  sg.id AS "groupId",
+  sg.name AS "groupName",
+  it."typeID" AS id,
+  it."typeName" AS name,
+  description,
+  it."basePrice",
+  it."iconID" AS "iconId",
+  it."graphicID" AS "graphicId",
+  ARRAY(
+    SELECT
+      jsonb_build_object(
+        'skill', rit."typeName",
+        'level', (
+           SELECT COALESCE("valueInt", "valueFloat")::int
+           FROM evesde."dgmTypeAttributes"
+           WHERE
+             "typeID" = it."typeID" AND
+             "attributeID" = (
+               SELECT "attributeID"
+               FROM evesde."dgmAttributeTypes"
+               WHERE
+                 "attributeName" = (
+                    SELECT "attributeName"
+                    FROM evesde."dgmAttributeTypes"
+                    WHERE "attributeID" = ta."attributeID") || 'Level')))
+    FROM
+      evesde."dgmTypeAttributes" AS ta
+      INNER JOIN evesde."invTypes" AS rit ON rit."typeID" = COALESCE(ta."valueInt", ta."valueFloat")
+    WHERE
+      ta."typeID" = it."typeID" AND
+      ta."attributeID" IN (
+        SELECT "attributeID" FROM evesde."dgmAttributeTypes"
+        WHERE "attributeName" IN (
+          'requiredSkill1', 'requiredSkill2', 'requiredSkill3',
+          'requiredSkill4', 'requiredSkill5', 'requiredSkill6'
+        )
+      )
+  ) AS "requiredSkills",
+  jsonb_build_object(
+    'primary', (SELECT
+      atp."attributeName"
+    FROM
+      evesde."dgmTypeAttributes" AS ta
+      INNER JOIN evesde."dgmAttributeTypes" AS at ON at."attributeID" = ta."attributeID"
+      INNER JOIN evesde."dgmAttributeTypes" AS atp ON atp."attributeID" = COALESCE(ta."valueInt", ta."valueFloat")
+    WHERE
+      "typeID" = it."typeID" AND
+      at."attributeName" = 'primaryAttribute'),
+    'secondary', (SELECT
+      atp."attributeName"
+    FROM
+      evesde."dgmTypeAttributes" AS ta
+      INNER JOIN evesde."dgmAttributeTypes" AS at ON at."attributeID" = ta."attributeID"
+      INNER JOIN evesde."dgmAttributeTypes" AS atp ON atp."attributeID" = COALESCE(ta."valueInt", ta."valueFloat")
+    WHERE
+      "typeID" = it."typeID" AND
+      at."attributeName" = 'secondaryAttribute'),
+    'rank', (SELECT
+      COALESCE(ta."valueInt", ta."valueFloat")
+    FROM
+      evesde."dgmTypeAttributes" AS ta
+      INNER JOIN evesde."dgmAttributeTypes" AS at ON at."attributeID" = ta."attributeID"
+    WHERE
+      "typeID" = it."typeID" AND
+      at."attributeName" = 'skillTimeConstant')
+  ) AS attributes
+FROM
+  skill_groups AS sg
+  INNER JOIN evesde."invTypes" AS it ON it."groupID" = sg.id
+WHERE
+  it.published = true;
+`;
+
+function getSpForLevelAndRank(level: number, rank: number) {
+  return Math.floor(
+    250 *
+    rank *
+    Math.pow(Math.sqrt(32), level - 1)
+  );
+}
+
+function getCategoryTypes(categoryId: number) {
+  return db.any(selectGroupsSql, {categoryId})
+    .then(groups => Promise.props({
+      groups,
+      typeGraph: Promise.map(groups,
+        group => db.any(selectGroupTypesSql, {groupId: group.id})
+          .then(types => Promise.map(types, type => Promise.props({
+            ...type,
+            attributes: db.any(selectTypeAttributesSql, {typeId: type.id})
+                          .then(attributes => attributes.map(attribute => ({
+                            id: attribute.id,
+                            value: attribute.valueFloat || attribute.valueInt
+                          })))
+          }))))
+    }));
+}
+
+function buildSpTable() {
+  const maxRank = 20;
+  const maxLevel = 5;
+  const table = {};
+
+  for (let rank = 1; rank <= maxRank; rank++) {
+    table[rank] = {};
+    for (let level = 1; level <= maxLevel; level++) {
+      table[rank][level] = getSpForLevelAndRank(level, rank);
+    }
+
+    table[rank].total = 0;
+    for (let level = 1; level <= maxLevel; level++) {
+      table[rank].total += table[rank][level];
+    }
+  }
+
+  return Promise.resolve(table);
+}
+
+function buildSkills() {
+  return db.any(selectCompleteSkillSql)
+    .then(skills => (skills.reduce((accum, skill) => {
+      const existingGroup = accum.groups.find(group => group.id === skill.groupId);
+      if (!existingGroup) {
+        accum.groups.push({
+          id: skill.groupId,
+          name: skill.groupName,
+          primaryAttribute: skill.attributes.primary,
+          secondaryAttribute: skill.attributes.secondary
+        });
+      }
+
+      accum.skills.push({
+        ...omit(skill, 'groupName', 'attributes'),
+        rank: skill.attributes.rank,
+        requiredSkills: (skill.requiredSkills || []).reduce((reqAccum, reqSkill) => {
+          reqAccum[reqSkill.skill] = reqSkill.level;
+          return reqAccum;
+        }, {})
+      });
+      return accum;
+    }, {
+      groups: [],
+      skills: []
+    })));
+}
+
+function buildImplants() {
+  return getCategoryTypes(implantCategory)
+    .then(context => ({
+      groups: context.groups,
+      types: flatten(context.typeGraph)
+    }));
+}
+
+Promise.all([
+  buildSpTable(),
+  buildSkills(),
+  buildImplants()
+])
+  .then(([spTable, skills, implants]) => {
+   /*let attributes = skills.types.reduce((accum, skill) => {
+      accum = unionBy(accum, skill.attributes, 'id');
+      return accum;
+    }, []);
+
+    attributes = unionBy(attributes, implants.types.reduce((accum, attr) => {
+      accum = unionBy(accum, attr.attributes, 'id');
+      return accum;
+    }, []), 'id');
+
+    return Promise.props({
+      skills,
+      implants,
+      attributes: db.any(selectAttributesSql, {attributeIds: attributes.map(attr => attr.id)})
+    });*/
+    return Promise.resolve({spTable, skills, implants, attributes: {}});
+  })
+  .then(({spTable, skills, implants, attributes}) => Promise.all([
+    asyncFs.writeFileAsync(path.join(__dirname, '../static/sptable.json'), JSON.stringify(spTable, null, 2)),
+    asyncFs.writeFileAsync(path.join(__dirname, '../static/skills.json'), JSON.stringify(skills, null, 2)),
+    asyncFs.writeFileAsync(path.join(__dirname, '../static/implants.json'), JSON.stringify(implants)),
+    asyncFs.writeFileAsync(path.join(__dirname, '../static/attributes.json'), JSON.stringify(attributes))
+  ]))
+  .finally(db.$pool.end);
+
+/*const host = 'https://esi.evetech.net';
 const datasource = 'tranquility';
 const lang = 'en-us';
 const version = 'latest';
@@ -185,3 +449,4 @@ class SkillDataBuilder {
 
 (new SkillDataBuilder()).build()
   .then(() => console.log('Skill data written'));
+*/
