@@ -28,6 +28,15 @@ const scopes = [
   'esi-clones.read_implants.v1'
 ];
 
+const refreshErrors = [
+  {
+    statusCode: 400,
+    error: 'invalid_token',
+    refreshState: RefreshState.invalidToken,
+    refreshDetail: 'ESI authentication expired. Character needs to re-authenticate'
+  }
+];
+
 class EsiService {
   private sessions: string[] = [];
 
@@ -73,9 +82,17 @@ class EsiService {
           this.getSkillQueue(character)
         ]).then(() => character);
       })
-      .catch((error: Error) => {
+      .catch(e => {
+        const refreshError =
+          refreshErrors.find(re => re.statusCode === e.statusCode && re.error === e.error.error);
+        if (refreshError) {
+          character.refreshState = refreshError.refreshState;
+          character.refreshDetail = refreshError.refreshDetail;
+          return character;
+        }
+
         character.refreshState = RefreshState.error;
-        character.refreshDetail = error.message;
+        character.refreshDetail = e.message;
         return character;
       })
       .finally(() => storageService.save<Character>(`character-${character.id.toString()}`, character));

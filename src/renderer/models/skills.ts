@@ -1,4 +1,6 @@
-import { observable } from 'mobx';
+import * as moment from 'moment';
+import 'moment-duration-format';
+import { observable, computed } from 'mobx';
 
 export class QueuedSkill {
   @observable
@@ -24,6 +26,11 @@ export class QueuedSkill {
 
   @observable
   public trainingStartSp: number;
+
+  @computed
+  public get finishedIn(): string {
+    return moment.duration(moment(this.finishes).diff(moment())).format();
+  }
 
   constructor(
     finishes: Date, finishedLevel: number, levelStartSp: number, levelEndSp: number,

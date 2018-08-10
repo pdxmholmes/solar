@@ -15,13 +15,11 @@ export class Navigation extends React.Component<NavigationProps, {}> {
   public render() {
     const { characters } = this.props;
     return (
-      <nav className="col-md-12 d-none d-md-block bg-primary sidebar">
+      <nav className="bg-primary sidebar">
         <div className="sidebar-sticky">
-          <h6 className="sidebar-heading text-muted">
-            <span>
-              <Link to="/" className="nav-link">Characters</Link>
-              <a href="#" onClick={this.onNewCharacter}><FontAwesomeIcon icon="plus" /></a>
-            </span>
+          <h6 className="sidebar-heading justify-content-between align-items-center d-flex text-muted">
+            <Link to="/" className="nav-link d-flex">Characters</Link>
+            <a href="#" onClick={this.onNewCharacter} className="d-flex"><FontAwesomeIcon icon="plus" /></a>
           </h6>
           <ul className="nav flex-column">
             {characters.map(character =>

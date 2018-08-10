@@ -3,6 +3,8 @@
     "target": "es5",
     "removeComments": true,
     "experimentalDecorators": true,
+    "alwaysStrict": true,
+    "preserveConstEnums": true,
     "jsx": "react",
     "outDir": "dist",
     "lib": ["es5", "es6", "dom"]

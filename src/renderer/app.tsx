@@ -37,16 +37,20 @@ declare global {
   export interface Promise<T> extends Bluebird<T> { }
 }
 
-Promise.all([
-  rootStore.loadConfiguration(),
-  rootStore.loadCharacters()
-]).then(() => {
-  ReactDOM.render(
-    <Solar store={rootStore} isDevelopment={isDevelopment} />,
-    document.getElementById('root')
-  );
-})
-  .catch(error => {
-    alert(`Something went terribly wrong starting Solar. Pleaee file a GitHub issue: ${error}`);
-    ipcRenderer.sendSync(messages.fatalError, { error });
-  });
+function bootstrapApp() {
+  Promise.all([
+    rootStore.loadConfiguration(),
+    rootStore.loadCharacters()
+  ]).then(() => {
+    ReactDOM.render(
+      <Solar store={rootStore} isDevelopment={isDevelopment} />,
+      document.getElementById('root')
+    );
+  })
+    .catch(error => {
+      alert(`Something went terribly wrong starting Solar. Pleaee file a GitHub issue: ${error}`);
+      ipcRenderer.sendSync(messages.fatalError, { error });
+    });
+}
+
+bootstrapApp();

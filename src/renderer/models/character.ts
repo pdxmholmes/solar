@@ -1,10 +1,13 @@
-import { observable } from 'mobx';
+import * as moment from 'moment';
+import { orderBy } from 'lodash';
+import { observable, computed } from 'mobx';
 import { Skill, QueuedSkill } from './skills';
 import { IStorageWritable } from '../services';
 
-export enum RefreshState {
+export const enum RefreshState {
   refreshing = 'refreshing',
   upToDate = 'upToDate',
+  invalidToken = 'invalidToken',
   error = 'error'
 }
 
@@ -72,6 +75,16 @@ export class Character implements IStorageWritable {
 
   @observable
   public portraits: CharacterPortraits;
+
+  @computed
+  public get currentlyTraining(): QueuedSkill {
+    const notFinishedSkills = (this.skillQueue || []).filter(skill => moment(skill.finishes).isAfter(moment()));
+    if (notFinishedSkills.length < 1) {
+      return null;
+    }
+
+    return orderBy(notFinishedSkills, 'queuePosition')[0];
+  }
 
   constructor(data: any = {}) {
     this.id = data.id;

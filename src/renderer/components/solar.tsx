@@ -23,11 +23,11 @@ export class Solar extends React.Component<SolarProps, {}> {
       <Router>
         <div className="container-fluid">
           <div className="row">
-            <div className="col-3">
+            <div className="col-2">
               <Navigation characters={characters} />
             </div>
 
-            <div className="col-9">
+            <div className="col-10">
               <Route exact={true} path="/" render={this.renderDashboard} />
               <Route path="/character/:id" render={this.renderCharacterDetail} />
             </div>
