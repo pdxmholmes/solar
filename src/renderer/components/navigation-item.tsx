@@ -17,13 +17,13 @@ export class NavigationItem extends React.Component<NavigationItemProps, {}> {
     const { character } = this.props;
     const icon = this.getRefreshStateIcon(character);
     return (
-      <li className="nav-item">
-        <Link to={`/character/${character.id}`} className="nav-lin d-flex">
+      <li className="nav-item justify-content-between align-items-center d-flex">
+        <Link to={`/character/${character.id}`} className="nav-link">
           <img className={styles.characterPortrait} src={character.portraits.px64} width="32" height="32" />
           {character.name}
         </Link>
         {icon &&
-          <FontAwesomeIcon className={styles.statusIcon} icon={icon} />
+          <FontAwesomeIcon className="ml-1" icon={icon} />
         }
       </li>
     );
