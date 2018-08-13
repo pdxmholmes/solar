@@ -1,19 +1,25 @@
 {
-  "extends": ["tslint:latest", "tslint-react" ],
+  "extends": [
+    "tslint:latest",
+    "tslint-react"
+  ],
   "rules": {
+    "align": false,
     "arrow-parens": false,
     "interface-name": false,
     "interface-over-type-literal": false,
     "jsx-no-multiline-js": false,
     "max-classes-per-file": false,
     "no-console": false,
-    "no-implicit-dependencies": [true,
+    "no-implicit-dependencies": [
+      true,
       "dev"
     ],
     "no-var-requires": false,
     "object-literal-sort-keys": false,
     "ordered-imports": false,
-    "quotemark": [true,
+    "quotemark": [
+      true,
       "single",
       "jsx-double",
       "avoid-template"

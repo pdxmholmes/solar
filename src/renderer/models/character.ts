@@ -1,6 +1,6 @@
 import * as moment from 'moment';
 import { orderBy } from 'lodash';
-import { observable, computed } from 'mobx';
+import { action, observable, computed } from 'mobx';
 import { Skill, QueuedSkill } from './skills';
 import { IStorageWritable } from '../services';
 
@@ -86,7 +86,7 @@ export class Character implements IStorageWritable {
     return orderBy(notFinishedSkills, 'queuePosition')[0];
   }
 
-  constructor(data: any = {}) {
+  constructor(data: any = {}, accessToken?: string) {
     this.id = data.id;
     this.name = data.name;
     this.refreshToken = data.refreshToken;
@@ -96,6 +96,33 @@ export class Character implements IStorageWritable {
     this.totalSkillPoints = data.totalSkillPoints;
     this.unallocatedSkillPoints = data.unallocatedSkillPoints;
     this.portraits = data.portraits;
+    this.accessToken = accessToken;
+  }
+
+  @action.bound
+  public beginRefresh(refreshToken: string, accessToken: string) {
+    this.refreshToken = refreshToken;
+    this.accessToken = accessToken;
+    this.refreshState = RefreshState.refreshing;
+    this.refreshDetail = null;
+  }
+
+  @action.bound
+  public finalizeRefresh(attributes: CharacterAttributes, portraits: CharacterPortraits, skills: Skill[],
+    totalSkillPoints: number, unallocatedSkillPoints: number, skillQueue: QueuedSkill[]) {
+    this.attributes = attributes;
+    this.portraits = portraits;
+    this.skills = skills;
+    this.totalSkillPoints = totalSkillPoints;
+    this.unallocatedSkillPoints = unallocatedSkillPoints;
+    this.skillQueue = skillQueue;
+    this.refreshState = RefreshState.upToDate;
+  }
+
+  @action.bound
+  public refreshError(state: RefreshState, detail: string) {
+    this.refreshState = state;
+    this.refreshDetail = detail;
   }
 
   public asWritable(): any {

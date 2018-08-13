@@ -9,7 +9,8 @@ import {
   Character,
   Skill,
   QueuedSkill,
-  CharacterAttributes
+  CharacterAttributes,
+  CharacterPortraits
 } from '../models';
 import { storageService } from '.';
 import { messages } from '../../common';
@@ -37,6 +38,17 @@ const refreshErrors = [
   }
 ];
 
+interface SkillResponse {
+  skills: Skill[];
+  totalSkillPoints: number;
+  unallocatedSkillPoints: number;
+}
+
+interface SsoState {
+  session: string;
+  characterId?: number;
+}
+
 class EsiService {
   private sessions: string[] = [];
 
@@ -44,17 +56,21 @@ class EsiService {
     ipcRenderer.on(messages.sso.receivedAuthCode, this.receiveAuthCode.bind(this));
   }
 
-  public authenticateNewCharacter() {
-    const session = Buffer.from(uuid.v4()).toString('base64');
+  public authenticateCharacter(characterId?: number) {
+    const state = {
+      session: uuid.v4(),
+      characterId
+    };
+
     const params = {
       response_type: 'code',
       redirect_uri: callbackUrl,
       client_id: rootStore.configuration.clientId,
       scope: scopes.join(' '),
-      state: session
+      state: this.encodeState(state)
     };
 
-    this.sessions.push(session);
+    this.sessions.push(state.session);
 
     shell.openExternal(`${loginUrl}?${querystring.stringify(params)}`);
   }
@@ -71,34 +87,38 @@ class EsiService {
       json: true
     })
       .then(response => {
-        character.refreshToken = response.refresh_token;
-        character.refreshState = RefreshState.upToDate;
-        character.accessToken = response.access_token;
-        character.refreshDetail = null;
+        character.beginRefresh(response.refresh_token, response.access_token);
         return Promise.all([
           this.getAttributes(character),
           this.getPortraits(character),
           this.getSkills(character),
           this.getSkillQueue(character)
-        ]).then(() => character);
+        ]).then(([attributes, portraits, skillResponse, skillQueue]) => {
+          character.finalizeRefresh(attributes, portraits, skillResponse.skills,
+            skillResponse.totalSkillPoints, skillResponse.unallocatedSkillPoints, skillQueue);
+        })
+          .then(() => character);
       })
       .catch(e => {
+        let refreshState: RefreshState = null;
+        let refreshDetail: string = null;
         const refreshError =
           refreshErrors.find(re => re.statusCode === e.statusCode && re.error === e.error.error);
         if (refreshError) {
-          character.refreshState = refreshError.refreshState;
-          character.refreshDetail = refreshError.refreshDetail;
-          return character;
+          refreshState = refreshError.refreshState;
+          refreshDetail = refreshError.refreshDetail;
+        } else {
+          refreshState = RefreshState.error;
+          refreshDetail = e.message;
         }
 
-        character.refreshState = RefreshState.error;
-        character.refreshDetail = e.message;
+        character.refreshError(refreshState, refreshDetail);
         return character;
       })
       .finally(() => storageService.save<Character>(`character-${character.id.toString()}`, character));
   }
 
-  public getSkills(character: Character): Promise<Character> {
+  public getSkills(character: Character): Promise<SkillResponse> {
     return request.get(`https://esi.evetech.net/latest/characters/${character.id}/skills`, {
       headers: {
         authorization: `Bearer ${character.accessToken}`
@@ -106,18 +126,19 @@ class EsiService {
       json: true
     })
       .then(({ skills, total_sp, unallocated_sp }) => {
-        character.skills = skills.map(skill => new Skill(
-          skill.skill_id,
-          skill.active_skill_level,
-          skill.trained_skill_level
-        ));
-        character.totalSkillPoints = total_sp;
-        character.unallocatedSkillPoints = unallocated_sp || 0;
-        return character;
+        return {
+          skills: skills.map(skill =>
+            new Skill(
+              skill.skill_id,
+              skill.active_skill_level,
+              skill.trained_skill_level)),
+          totalSkillPoints: total_sp,
+          unallocatedSkillPoints: unallocated_sp || 0
+        };
       });
   }
 
-  public getSkillQueue(character: Character): Promise<Character> {
+  public getSkillQueue(character: Character): Promise<QueuedSkill[]> {
     return request.get(`https://esi.evetech.net/latest/characters/${character.id}/skillqueue`, {
       headers: {
         authorization: `Bearer ${character.accessToken}`
@@ -125,7 +146,7 @@ class EsiService {
       json: true
     })
       .then(queue => {
-        character.skillQueue = queue.map(skill => new QueuedSkill(
+        return queue.map(skill => new QueuedSkill(
           skill.finish_date ? new Date(skill.finish_date) : null,
           skill.finished_level,
           skill.level_start_sp,
@@ -135,27 +156,24 @@ class EsiService {
           skill.start_date ? new Date(skill.start_date) : null,
           skill.training_start_sp
         ));
-        return character;
       });
   }
 
-  public getPortraits(character: Character): Promise<Character> {
+  public getPortraits(character: Character): Promise<CharacterPortraits> {
     return request.get(`https://esi.evetech.net/latest/characters/${character.id}/portrait`, {
       json: true
     })
       .then(portraits => {
-        character.portraits = {
+        return {
           px64: portraits.px64x64,
           px128: portraits.px128x128,
           px256: portraits.px256x256,
           px512: portraits.px512x512
         };
-
-        return character;
       });
   }
 
-  public getAttributes(character: Character): Promise<Character> {
+  public getAttributes(character: Character): Promise<CharacterAttributes> {
     return request.get(`https://esi.evetech.net/latest/characters/${character.id}/attributes`, {
       headers: {
         authorization: `Bearer ${character.accessToken}`
@@ -163,9 +181,7 @@ class EsiService {
       json: true
     })
       .then(attributes => {
-        console.log(attributes);
-        character.attributes = new CharacterAttributes(attributes);
-        return character;
+        return new CharacterAttributes(attributes);
       });
   }
 
@@ -174,10 +190,10 @@ class EsiService {
       return;
     }
 
-    const activeSession = this.sessions.find(session => session === state);
+    const { session, characterId } = this.decodeState(state);
+    const activeSession = this.sessions.find(s => s === session);
     if (!activeSession) {
-      console.error(`Could not find active session: ${state}`);
-      return;
+      return Promise.reject(`Could not find active session: ${state}`);
     }
 
     request.post(authorizeUrl, {
@@ -194,12 +210,13 @@ class EsiService {
         this.verifyCharacter(
           response.access_token,
           response.refresh_token,
-          response.access_token
+          response.access_token,
+          characterId
         ))
       .catch(err => console.error(err));
   }
 
-  private verifyCharacter(bearerToken: string, refreshToken: string, accessToken: string) {
+  private verifyCharacter(bearerToken: string, refreshToken: string, accessToken: string, characterId?: number) {
     return request.get(characterVerifyUrl, {
       headers: {
         authorization: `Bearer ${bearerToken}`
@@ -207,12 +224,22 @@ class EsiService {
       json: true
     })
       .then(response => {
-        const character = new Character();
-        character.id = response.CharacterID;
-        character.name = response.CharacterName;
-        character.refreshToken = refreshToken;
-        character.accessToken = accessToken;
-        character.refreshState = RefreshState.upToDate;
+        let character: Character = null;
+        if (characterId) {
+          if (characterId !== response.CharacterID) {
+            return Promise.reject('Character ID\'s don\'t match. Please use Add Character to add new characters.');
+          }
+
+          character = rootStore.characters.find(c => c.id === characterId);
+          character.beginRefresh(refreshToken, accessToken);
+        } else {
+          character = new Character({
+            id: response.CharacterID,
+            name: response.CharacterName,
+            refreshToken,
+            refreshState: RefreshState.refreshing
+          }, accessToken);
+        }
 
         return Promise.all([
           this.getAttributes(character),
@@ -220,7 +247,10 @@ class EsiService {
           this.getSkills(character),
           this.getSkillQueue(character)
         ])
-          .then(() => {
+          .then(([attributes, portraits, skillResponse, skillQueue]) => {
+            character.finalizeRefresh(attributes, portraits, skillResponse.skills,
+              skillResponse.totalSkillPoints, skillResponse.unallocatedSkillPoints, skillQueue);
+
             rootStore.addCharacter(character);
             return storageService.save<Character>(`character-${character.id.toString()}`, character);
           });
@@ -230,6 +260,14 @@ class EsiService {
   private getAuthorization(): string {
     return Buffer.from(`${rootStore.configuration.clientId}:${rootStore.configuration.clientSecret}`)
       .toString('base64');
+  }
+
+  private encodeState(state: SsoState) {
+    return Buffer.from(JSON.stringify(state)).toString('base64');
+  }
+
+  private decodeState(state: string): SsoState {
+    return JSON.parse(Buffer.from(state, 'base64').toString('utf8')) as SsoState;
   }
 }
 

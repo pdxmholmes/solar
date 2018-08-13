@@ -32,6 +32,6 @@ export class Navigation extends React.Component<NavigationProps, {}> {
   }
 
   private onNewCharacter = () => {
-    esiService.authenticateNewCharacter();
+    esiService.authenticateCharacter();
   }
 }

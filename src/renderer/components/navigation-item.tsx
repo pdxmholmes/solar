@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { Character, RefreshState } from '../models';
 import { IconName } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { esiService } from '../services';
 
 const styles = require('./navigation-item.scss');
 
@@ -16,6 +17,7 @@ export class NavigationItem extends React.Component<NavigationItemProps, {}> {
   public render() {
     const { character } = this.props;
     const icon = this.getRefreshStateIcon(character);
+    const action = this.getRefreshStateAction(character);
     return (
       <li className="nav-item justify-content-between align-items-center d-flex">
         <Link to={`/character/${character.id}`} className="nav-link">
@@ -23,10 +25,16 @@ export class NavigationItem extends React.Component<NavigationItemProps, {}> {
           {character.name}
         </Link>
         {icon &&
-          <FontAwesomeIcon className="ml-1" icon={icon} />
+          <a href="#" onClick={action}>
+            <FontAwesomeIcon className="ml-1" icon={icon} />
+          </a>
         }
       </li>
     );
+  }
+
+  private reauthenticateCharacter(character: Character) {
+    esiService.authenticateCharacter(character.id);
   }
 
   private getRefreshStateIcon(character: Character): IconName {
@@ -37,6 +45,15 @@ export class NavigationItem extends React.Component<NavigationItemProps, {}> {
         return 'exclamation';
       case RefreshState.refreshing:
         return 'sync-alt';
+      default:
+        return null;
+    }
+  }
+
+  private getRefreshStateAction(character: Character): () => void {
+    switch (character.refreshState) {
+      case RefreshState.invalidToken:
+        return this.reauthenticateCharacter.bind(this, character);
       default:
         return null;
     }
