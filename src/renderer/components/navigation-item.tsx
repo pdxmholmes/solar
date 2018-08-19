@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { Character, RefreshState } from '../models';
 import { IconName } from '@fortawesome/fontawesome-svg-core';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { esiService } from '../services';
+import { ssoService } from '../services';
 
 const styles = require('./navigation-item.scss');
 
@@ -25,8 +25,8 @@ export class NavigationItem extends React.Component<NavigationItemProps, {}> {
           {character.name}
         </Link>
         {icon &&
-          <a href="#" onClick={action}>
-            <FontAwesomeIcon className="ml-1" icon={icon} />
+          <a href="#" className="mr-2" onClick={action}>
+            <FontAwesomeIcon icon={icon} />
           </a>
         }
       </li>
@@ -34,7 +34,7 @@ export class NavigationItem extends React.Component<NavigationItemProps, {}> {
   }
 
   private reauthenticateCharacter(character: Character) {
-    esiService.authenticateCharacter(character.id);
+    ssoService.authenticateCharacter(character.id);
   }
 
   private getRefreshStateIcon(character: Character): IconName {

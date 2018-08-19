@@ -2,7 +2,7 @@ import * as React from 'react';
 import { observer } from 'mobx-react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { esiService } from '../services';
+import { ssoService } from '../services';
 import { Character } from '../models';
 import { NavigationItem } from './navigation-item';
 
@@ -19,7 +19,7 @@ export class Navigation extends React.Component<NavigationProps, {}> {
         <div className="sidebar-sticky">
           <h6 className="sidebar-heading justify-content-between align-items-center d-flex text-muted">
             <Link to="/" className="nav-link d-flex">Characters</Link>
-            <a href="#" onClick={this.onNewCharacter} className="ml-1"><FontAwesomeIcon icon="plus" /></a>
+            <a href="#" onClick={this.onNewCharacter} className="mr-2"><FontAwesomeIcon icon="plus" /></a>
           </h6>
           <ul className="nav flex-column">
             {characters.map(character =>
@@ -32,6 +32,6 @@ export class Navigation extends React.Component<NavigationProps, {}> {
   }
 
   private onNewCharacter = () => {
-    esiService.authenticateCharacter();
+    ssoService.authenticateCharacter();
   }
 }

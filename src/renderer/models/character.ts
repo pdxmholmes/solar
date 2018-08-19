@@ -117,6 +117,7 @@ export class Character implements IStorageWritable {
     this.unallocatedSkillPoints = unallocatedSkillPoints;
     this.skillQueue = skillQueue;
     this.refreshState = RefreshState.upToDate;
+    this.refreshDetail = null;
   }
 
   @action.bound
